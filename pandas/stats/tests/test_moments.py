@@ -2,6 +2,7 @@ import unittest
 import nose
 import sys
 import functools
+import itertools
 
 from datetime import datetime
 from numpy.random import randn
@@ -554,6 +555,19 @@ class TestMoments(unittest.TestCase):
         result = mom.rolling_cov(A, B, 50, min_periods=25)
         assert_almost_equal(result[-1], np.cov(A[-50:], B[-50:])[0, 1])
 
+        # test center parameter
+        mp = 25
+        result = mom.rolling_cov(A, B, 50, min_periods=mp, center=True)
+        expected = np.cov(A[-50:], B[-50:])[0, 1]
+        assert_almost_equal(result[result.size - mp - 1], expected)
+
+        # center and ndarray
+        mp = 25
+        result = mom.rolling_cov(A.values, B.values, 50, min_periods=mp,
+                                 center=True)
+        expected = np.cov(A[-50:], B[-50:])[0, 1]
+        assert_almost_equal(result[result.size - mp - 1], expected)
+
     def test_rolling_corr(self):
         A = self.series
         B = A + randn(len(A))
@@ -577,6 +591,60 @@ class TestMoments(unittest.TestCase):
         exp = mom.rolling_corr(self.frame[1], self.frame[5],
                                10, min_periods=5)
         tm.assert_series_equal(correl, exp)
+
+    def test_frame_rolling_window(self):
+        self._rolling_window(self.frame[:6], DataFrame)
+
+    def test_series_rolling_window(self):
+        self._rolling_window(self.series[:6], Series)
+
+    def _rolling_window(self, arg, assert_type):
+
+        windows = 2, randn(len(arg))
+        win_types = {'boxcar': {}, 'triang': {}, 'blackman': {},
+                     'hamming': {}, 'bartlett': {},
+                     'parzen': {}, 'bohman': {}, 'blackmanharris': {},
+                     'nuttall': {}, 'barthann': {},
+                     'kaiser': {'beta': 1.0}, 'gaussian': {'std': 1.0},
+                     'general_gaussian': {'power': 1.0, 'width': 1.0},
+                     'slepian': {'width': 0.25}}
+
+        min_periods = windows[0]
+        freqs = None, 'T'
+        centers = True, False
+        means = True, False
+
+        # window is ndarray and window type is specified
+        self.assertRaises(ValueError, mom.rolling_window, arg, windows[1],
+                          'boxcar', min_periods)
+
+        # window is integer and no window type is given
+        self.assertRaises(ValueError, mom.rolling_window, arg, windows[0],
+                          None, min_periods)
+
+        # should test for scipy import error here: how to simulate?
+        #####
+
+        # window is not a list, tuple, array, or integer
+        self.assertRaises(ValueError, mom.rolling_window, arg, {'nonworking'},
+                          'boxcar', min_periods)
+
+        # _pop_args raises valueerror when needed args not given for
+        # certain windows (see docs for mom.rolling_window)
+        self.assertRaises(ValueError, mom.rolling_window, arg, windows[0],
+                          'gaussian', min_periods)
+
+        args = itertools.product(windows, win_types, freqs, centers, means)
+        for window, win_type, freq, center, mean in args:
+            if isinstance(window, (list, tuple, np.ndarray)):
+                r = mom.rolling_window(arg, window, None, min_periods,
+                                       freq, center, mean,
+                                       **win_types[win_type])
+            else:
+                r = mom.rolling_window(arg, window, win_type, min_periods,
+                                       freq, center, mean,
+                                       **win_types[win_type])
+            self.assertIsInstance(r, assert_type)
 
     def test_flex_binary_frame(self):
         def _check(method):
