@@ -9,6 +9,8 @@ Parts derived from scikits.timeseries code, original authors:
 from unittest import TestCase
 from datetime import datetime, date, timedelta
 import unittest
+import itertools
+from nose.tools import assert_is_instance
 
 from numpy.ma.testutils import assert_equal
 
@@ -1851,12 +1853,27 @@ class TestPeriodIndex(TestCase):
             self.assert_(isinstance(joined, PeriodIndex))
             self.assert_(joined.freq == index.freq)
 
-    def test_join_with_datetime_index(self):
+    def test_joins_with_datetime_and_period_index(self):
         df = tm.makeCustomDataframe(10, 10, data_gen_f=lambda *args:
                                     randn(), c_idx_type='p',
                                     r_idx_type='dt')
         s = df.iloc[:5, 0]
-        s.index.join(df.columns, how='outer')
+
+        # test each join type
+        join_types = 'left', 'right', 'inner', 'outer'
+
+        # also test that the join is symmetric
+        inds = df.columns, s.index
+
+        args = itertools.product(join_types, inds, inds)
+        res_types = {(PeriodIndex, PeriodIndex): PeriodIndex,
+                     (PeriodIndex, DatetimeIndex): PeriodIndex,
+                     (DatetimeIndex, PeriodIndex): DatetimeIndex,
+                     (DatetimeIndex, DatetimeIndex): DatetimeIndex}
+
+        for join_type, ind1, ind2 in args:
+            res = ind1.join(ind2, how=join_type)
+            assert_is_instance(res, res_types[type(ind1), type(ind2)])
 
     def test_align_series(self):
         rng = period_range('1/1/2000', '1/1/2010', freq='A')

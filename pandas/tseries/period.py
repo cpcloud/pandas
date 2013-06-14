@@ -1020,7 +1020,7 @@ class PeriodIndex(Int64Index):
         """
         See Index.join
         """
-        self._assert_can_do_setop(other)
+        other = self._try_convert_other_index(other)
 
         result = Int64Index.join(self, other, how=how, level=level,
                                  return_indexers=return_indexers)
@@ -1031,13 +1031,20 @@ class PeriodIndex(Int64Index):
         else:
             return self._apply_meta(result)
 
-    def _assert_can_do_setop(self, other):
-        if not isinstance(other, PeriodIndex):
-            raise ValueError('can only call with other PeriodIndex-ed objects')
+    def _try_convert_other_index(self, other):
+        if not isinstance(other, (PeriodIndex, DatetimeIndex)):
+            raise ValueError('can only call with other PeriodIndex-ed or '
+                             'DatetimeIndex-ed objects')
+
+        try:
+            other = other.to_period()
+        except AttributeError:
+            pass
 
         if self.freq != other.freq:
             raise ValueError('Only like-indexed PeriodIndexes compatible '
                              'for join (for now)')
+        return other
 
     def _wrap_union_result(self, other, result):
         name = self.name if self.name == other.name else None

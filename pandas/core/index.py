@@ -973,6 +973,8 @@ class Index(np.ndarray):
         -------
         join_index, (left_indexer, right_indexer)
         """
+        from pandas.tseries.index import DatetimeIndex
+        from pandas.tseries.period import PeriodIndex
         if (level is not None and (isinstance(self, MultiIndex) or
                                    isinstance(other, MultiIndex))):
             return self._join_level(other, level, how=how,
@@ -1006,10 +1008,13 @@ class Index(np.ndarray):
             return result
 
         if self.dtype != other.dtype:
+            if isinstance(self, DatetimeIndex) and isinstance(other,
+                                                              PeriodIndex):
+                return self.join(other.to_datetime(), how=how,
+                                 return_indexers=return_indexers)
             this = self.astype('O')
             other = other.astype('O')
-            return this.join(other, how=how,
-                             return_indexers=return_indexers)
+            return this.join(other, how=how, return_indexers=return_indexers)
 
         _validate_join_method(how)
 
