@@ -1851,6 +1851,13 @@ class TestPeriodIndex(TestCase):
             self.assert_(isinstance(joined, PeriodIndex))
             self.assert_(joined.freq == index.freq)
 
+    def test_join_with_datetime_index(self):
+        df = tm.makeCustomDataframe(10, 10, data_gen_f=lambda *args:
+                                    randn(), c_idx_type='p',
+                                    r_idx_type='dt')
+        s = df.iloc[:5, 0]
+        s.index.join(df.columns, how='outer')
+
     def test_align_series(self):
         rng = period_range('1/1/2000', '1/1/2010', freq='A')
         ts = Series(np.random.randn(len(rng)), index=rng)

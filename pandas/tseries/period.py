@@ -4,7 +4,6 @@ import operator
 from datetime import datetime, date
 import numpy as np
 
-import pandas.tseries.offsets as offsets
 from pandas.tseries.frequencies import (get_freq_code as _gfc,
                                         _month_numbers, FreqGroup)
 from pandas.tseries.index import DatetimeIndex, Int64Index, Index
@@ -12,7 +11,7 @@ from pandas.tseries.tools import parse_time_string
 import pandas.tseries.frequencies as _freq_mod
 
 import pandas.core.common as com
-from pandas.core.common import isnull, _NS_DTYPE, _INT64_DTYPE
+from pandas.core.common import isnull, _INT64_DTYPE
 from pandas.util import py3compat
 
 from pandas.lib import Timestamp
@@ -575,11 +574,9 @@ class PeriodIndex(Int64Index):
     __le__ = _period_index_cmp('__le__')
     __ge__ = _period_index_cmp('__ge__')
 
-    def __new__(cls, data=None, ordinal=None,
-                freq=None, start=None, end=None, periods=None,
-                copy=False, name=None,
-                year=None, month=None, quarter=None, day=None,
-                hour=None, minute=None, second=None,
+    def __new__(cls, data=None, ordinal=None, freq=None, start=None, end=None,
+                periods=None, copy=False, name=None, year=None, month=None,
+                quarter=None, day=None, hour=None, minute=None, second=None,
                 tz=None):
 
         freq = _freq_mod.get_standard_freq(freq)
@@ -588,8 +585,8 @@ class PeriodIndex(Int64Index):
             if com.is_float(periods):
                 periods = int(periods)
             elif not com.is_integer(periods):
-                raise ValueError('Periods must be a number, got %s' %
-                                 str(periods))
+                raise ValueError(u'Periods must be a number, got '
+                                 '{0}'.format(periods))
 
         if data is None:
             if ordinal is not None:
@@ -631,9 +628,9 @@ class PeriodIndex(Int64Index):
     def _from_arraylike(cls, data, freq, tz):
         if not isinstance(data, np.ndarray):
             if np.isscalar(data) or isinstance(data, Period):
-                raise ValueError('PeriodIndex() must be called with a '
-                                 'collection of some kind, %s was passed'
-                                 % repr(data))
+                raise ValueError(u'PeriodIndex() must be called with a '
+                                 'collection of some kind, {0!r} was '
+                                 'passed'.format(data))
 
             # other iterable of some kind
             if not isinstance(data, (list, tuple)):
@@ -671,14 +668,12 @@ class PeriodIndex(Int64Index):
                     freq = getattr(data[0], 'freq', None)
 
                 if freq is None:
-                    raise ValueError(('freq not specified and cannot be '
-                                      'inferred from first element'))
+                    raise ValueError('freq not specified and cannot be '
+                                     'inferred from first element')
 
                 if np.issubdtype(data.dtype, np.datetime64):
                     data = dt64arr_to_periodarr(data, freq, tz)
-                elif data.dtype == np.int64:
-                    pass
-                else:
+                elif data.dtype != np.int64:
                     try:
                         data = com._ensure_int64(data)
                     except (TypeError, ValueError):
