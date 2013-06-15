@@ -10,7 +10,6 @@ from unittest import TestCase
 from datetime import datetime, date, timedelta
 import unittest
 import itertools
-from nose.tools import assert_is_instance
 
 from numpy.ma.testutils import assert_equal
 
@@ -1873,7 +1872,7 @@ class TestPeriodIndex(TestCase):
 
         for join_type, ind1, ind2 in args:
             res = ind1.join(ind2, how=join_type)
-            assert_is_instance(res, res_types[type(ind1), type(ind2)])
+            self.assert_(isinstance(res, res_types[type(ind1), type(ind2)]))
 
     def test_align_series(self):
         rng = period_range('1/1/2000', '1/1/2010', freq='A')
