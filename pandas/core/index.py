@@ -671,7 +671,7 @@ class Index(np.ndarray):
         intersection : Index
         """
         if not hasattr(other, '__iter__'):
-            raise Exception('Input must be iterable!')
+            raise TypeError('Input must be iterable!')
 
         self._assert_can_do_setop(other)
 
