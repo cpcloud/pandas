@@ -139,6 +139,8 @@ class DatetimeIndex(Int64Index):
     _engine_type = _index.DatetimeEngine
 
     offset = None
+    _join_compatible = ('period', 'string', 'integer', 'datetime64', 'date',
+                        'datetime')
 
     def __new__(cls, data=None,
                 freq=None, start=None, end=None, periods=None,
@@ -906,17 +908,30 @@ class DatetimeIndex(Int64Index):
 
         return factory(to_concat)
 
-    def join(self, other, how='left', level=None, return_indexers=False):
-        """
-        See Index.join
-        """
-        if (not isinstance(other, DatetimeIndex) and len(other) > 0 and
-            other.inferred_type != 'mixed-integer'):
+    def _assert_can_do_setop(self, other):
+        if len(other) and other.inferred_type not in self._join_compatible:
+            raise TypeError("DatetimeIndex can only be joined with Index "
+                            "objects with types: {0}, you passed a "
+                            "{1!r}".format(self._join_compatible,
+                                           other.inferred_type))
+
+    def _try_convert_other_index(self, other):
+        from pandas.tseries.period import PeriodIndex
+        if isinstance(other, PeriodIndex):
+            other = other.to_datetime()
+        else:
             try:
                 other = DatetimeIndex(other)
             except TypeError:
                 pass
+        return other
 
+    def join(self, other, how='left', level=None, return_indexers=False):
+        """
+        See Index.join
+        """
+        self._assert_can_do_setop(other)
+        other = self._try_convert_other_index(other)
         this, other = self._maybe_utc_convert(other)
         return Index.join(this, other, how=how, level=level,
                           return_indexers=return_indexers)
