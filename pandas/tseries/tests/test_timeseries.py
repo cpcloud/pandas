@@ -1880,14 +1880,20 @@ class TestDatetimeIndex(unittest.TestCase):
         expected = [t.date() for t in rng]
         self.assert_((result == expected).all())
 
-    def test_does_not_convert_mixed_integer(self):
+    def test_convert_mixed_integer_fails(self):
         df = tm.makeCustomDataframe(10, 10, data_gen_f=lambda *args, **kwargs:
                                     randn(), r_idx_type='i', c_idx_type='dt')
         cols = df.columns.join(df.index, how='outer')
-        joined = cols.join(df.columns)
-        self.assertEqual(cols.dtype, np.dtype('O'))
-        self.assertEqual(cols.dtype, joined.dtype)
-        self.assert_(np.array_equal(cols.values, joined.values))
+
+        # cannot join mixed-integer
+        def f(how):
+            self.assertRaises(TypeError, cols.join, df.columns, how=how)
+        self._run_over_join_types(f)
+
+    def _run_over_join_types(self, f, *args, **kwargs):
+        for how in ('left', 'right', 'outer', 'inner'):
+            f(*args, how=how, **kwargs)
+
 
 class TestLegacySupport(unittest.TestCase):
     _multiprocess_can_split_ = True

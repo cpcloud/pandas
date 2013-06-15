@@ -1919,9 +1919,17 @@ class TestPeriodIndex(TestCase):
         # raise if different frequencies
         index = period_range('1/1/2000', '1/20/2000', freq='D')
         index2 = period_range('1/1/2000', '1/20/2000', freq='W-WED')
-        self.assertRaises(Exception, index.union, index2)
+        self.assertRaises(ValueError, index.union, index2)
 
-        self.assertRaises(ValueError, index.join, index.to_timestamp())
+    def test_join_conversion(self):
+        index = period_range('1/1/2000', '1/20/2000', freq='D')
+        index2 = period_range('1/1/2000', '1/20/2000', freq='W-WED')
+
+        res = index.join(index.to_timestamp())
+        self.assert_(res.equals(index))
+
+        for how in ('left', 'right', 'outer', 'inner'):
+            self.assertRaises(ValueError, index.join, index2, how=how)
 
     def test_intersection(self):
         index = period_range('1/1/2000', '1/20/2000', freq='D')
@@ -1938,7 +1946,7 @@ class TestPeriodIndex(TestCase):
         # raise if different frequencies
         index = period_range('1/1/2000', '1/20/2000', freq='D')
         index2 = period_range('1/1/2000', '1/20/2000', freq='W-WED')
-        self.assertRaises(Exception, index.intersection, index2)
+        self.assertRaises(ValueError, index.intersection, index2)
 
     def test_fields(self):
         # year, month, day, hour, minute
