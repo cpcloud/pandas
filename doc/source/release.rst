@@ -252,6 +252,8 @@ Improvements to existing features
     restore the previous behaviour.  (:issue:`5254`)
   - The FRED DataReader now accepts multiple series (:issue`3413`)
   - StataWriter adjusts variable names to Stata's limitations (:issue:`5709`)
+  - ``DataFrame.hist`` now allows a string to be passed to ``by``. This string
+    indicates a column in the calling frame (:issue:`4103`, :issue:`4105`)
 
 API Changes
 ~~~~~~~~~~~

@@ -448,6 +448,14 @@ Enhancements
      # previously, nan was erroneously counted as 2 here
      # now it is not counted at all
      get_dummies([1, 2, np.nan])
+  - ``read_html`` now raises a ``URLError`` instead of catching and raising a
+    ``ValueError`` (:issue:`4303`, :issue:`4305`)
+  - Added a test for ``read_clipboard()`` and ``to_clipboard()`` (:issue:`4282`)
+  - Clipboard functionality now works with PySide (:issue:`4282`)
+  - Added a more informative error message when plot arguments contain
+    overlapping color and style arguments (:issue:`4402`)
+  - ``DataFrame.hist`` now allows a string to be passed to ``by``. This string
+    indicates a column in the calling frame (:issue:`4103`, :issue:`4105`)
 
      # unless requested
      get_dummies([1, 2, np.nan], dummy_na=True)
