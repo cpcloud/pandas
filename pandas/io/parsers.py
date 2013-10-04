@@ -6,7 +6,6 @@ from pandas.compat import range, lrange, StringIO, lzip, zip, string_types
 from pandas import compat
 import re
 import csv
-from warnings import warn
 
 import numpy as np
 
@@ -518,7 +517,12 @@ class TextFileReader(object):
         result = options.copy()
 
         sep = options['delimiter']
-        if (sep is None and not options['delim_whitespace']):
+        delim_whitespace = options['delim_whitespace']
+
+        assert not isinstance(delim_whitespace, np.ndarray), str(delim_whitespace)
+        assert not isinstance(sep, np.ndarray), str(sep)
+
+        if sep is None and not delim_whitespace:
             if engine == 'c':
                 print('Using Python parser to sniff delimiter')
                 engine = 'python'
