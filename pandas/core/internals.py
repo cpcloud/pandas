@@ -2,7 +2,6 @@ import itertools
 import re
 import operator
 from datetime import datetime, timedelta
-import copy
 from collections import defaultdict
 
 import numpy as np
@@ -11,7 +10,7 @@ from pandas.core.base import PandasObject
 from pandas.core.common import (_possibly_downcast_to_dtype, isnull, notnull,
                                 _NS_DTYPE, _TD_DTYPE, ABCSeries, is_list_like,
                                 ABCSparseSeries, _infer_dtype_from_scalar,
-                                _values_from_object, _is_null_datelike_scalar)
+                                _is_null_datelike_scalar)
 from pandas.core.index import (Index, MultiIndex, _ensure_index,
                                _handle_legacy_indexes)
 from pandas.core.indexing import (_maybe_convert_indices, _length_of_indexer)
@@ -23,8 +22,9 @@ import pandas.computation.expressions as expressions
 
 from pandas.tslib import Timestamp
 from pandas import compat
-from pandas.compat import range, lrange, lmap, callable, map, zip, u
+from pandas.compat import range, lrange, lmap, map, zip
 from pandas.tseries.timedeltas import _coerce_scalar_to_timedelta_type
+
 
 class Block(PandasObject):
 
@@ -2508,7 +2508,7 @@ class BlockManager(PandasObject):
                 return isnull(values)
             return _possibly_compare(values, getattr(s, 'asm8', s),
                                      operator.eq)
-        masks = [comp(s) for i, s in enumerate(src_list)]
+        masks = list(map(comp, src_list))
 
         result_blocks = []
         for blk in self.blocks:
@@ -2516,12 +2516,11 @@ class BlockManager(PandasObject):
             # its possible to get multiple result blocks here
             # replace ALWAYS will return a list
             rb = [blk if inplace else blk.copy()]
-            for i, (s, d) in enumerate(zip(src_list, dest_list)):
+            for s, d, mask in zip(src_list, dest_list, masks):
                 new_rb = []
                 for b in rb:
                     if b.dtype == np.object_:
-                        result = b.replace(s, d, inplace=inplace,
-                                           regex=regex)
+                        result = b.replace(s, d, inplace=inplace, regex=regex)
                         if isinstance(result, list):
                             new_rb.extend(result)
                         else:
@@ -2529,7 +2528,7 @@ class BlockManager(PandasObject):
                     else:
                         # get our mask for this element, sized to this
                         # particular block
-                        m = masks[i][b.ref_locs]
+                        m = mask[b.ref_locs]
                         if m.any():
                             new_rb.extend(b.putmask(m, d, inplace=True))
                         else:
