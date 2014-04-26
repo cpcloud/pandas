@@ -1010,7 +1010,7 @@ class NDFrame(PandasObject):
                     setattr(self, iname, i)
                 return i
 
-            setattr(cls, name, property(_indexer))
+            setattr(cls, name, property(_indexer, doc=_indexer.__doc__))
 
             # add to our internal names set
             cls._internal_names_set.add(iname)
