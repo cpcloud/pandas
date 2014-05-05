@@ -584,8 +584,8 @@ def _expand_elements(body):
         body[ind] += empty * (lens_max - length)
 
 
-def _data_to_frame(data, header, index_col, skiprows, infer_types,
-                   parse_dates, tupleize_cols, thousands):
+def _data_to_frame(data, header, index_col, skiprows, parse_dates,
+                   tupleize_cols, thousands):
     head, body, _ = data  # _ is footer which is rarely used: ignore for now
 
     if head:
@@ -602,11 +602,6 @@ def _data_to_frame(data, header, index_col, skiprows, infer_types,
                     parse_dates=parse_dates, tupleize_cols=tupleize_cols,
                     thousands=thousands)
     df = tp.read()
-
-    if infer_types:  # TODO: rm this code so infer_types has no effect in 0.14
-        df = df.convert_objects(convert_dates='coerce')
-    else:
-        df = df.applymap(text_type)
     return df
 
 
@@ -688,7 +683,7 @@ def _validate_flavor(flavor):
     return flavor
 
 
-def _parse(flavor, io, match, header, index_col, skiprows, infer_types,
+def _parse(flavor, io, match, header, index_col, skiprows,
            parse_dates, tupleize_cols, thousands, attrs):
     flavor = _validate_flavor(flavor)
     compiled_match = re.compile(match)  # you can pass a compiled regex here
@@ -708,14 +703,14 @@ def _parse(flavor, io, match, header, index_col, skiprows, infer_types,
     else:
         raise_with_traceback(retained)
 
-    return [_data_to_frame(table, header, index_col, skiprows, infer_types,
+    return [_data_to_frame(table, header, index_col, skiprows,
                            parse_dates, tupleize_cols, thousands)
             for table in tables]
 
 
 def read_html(io, match='.+', flavor=None, header=None, index_col=None,
-              skiprows=None, infer_types=None, attrs=None, parse_dates=False,
-              tupleize_cols=False, thousands=','):
+              skiprows=None, attrs=None, parse_dates=False,
+              tupleize_cols=False, thousands=',', infer_types=None):
     r"""Read HTML tables into a ``list`` of ``DataFrame`` objects.
 
     Parameters
@@ -752,10 +747,6 @@ def read_html(io, match='.+', flavor=None, header=None, index_col=None,
         that sequence.  Note that a single element sequence means 'skip the nth
         row' whereas an integer means 'skip n rows'.
 
-    infer_types : bool, optional
-        This option is deprecated in 0.13, an will have no effect in 0.14. It
-        defaults to ``True``.
-
     attrs : dict or None, optional
         This is a dictionary of attributes that you can pass to use to identify
         the table in the HTML. These are not checked for validity before being
@@ -779,10 +770,7 @@ def read_html(io, match='.+', flavor=None, header=None, index_col=None,
         latest information on table attributes for the modern web.
 
     parse_dates : bool, optional
-        See :func:`~pandas.io.parsers.read_csv` for more details. In 0.13, this
-        parameter can sometimes interact strangely with ``infer_types``. If you
-        get a large number of ``NaT`` values in your results, consider passing
-        ``infer_types=False`` and manually converting types afterwards.
+        See :func:`~pandas.io.parsers.read_csv` for more details.
 
     tupleize_cols : bool, optional
         If ``False`` try to parse multiple header rows into a
@@ -791,6 +779,9 @@ def read_html(io, match='.+', flavor=None, header=None, index_col=None,
 
     thousands : str, optional
         Separator to use to parse thousands. Defaults to ``','``.
+
+    infer_types : bool, optional
+        Has no effect since version 0.14.0
 
     Returns
     -------
@@ -826,15 +817,10 @@ def read_html(io, match='.+', flavor=None, header=None, index_col=None,
     --------
     pandas.io.parsers.read_csv
     """
-    if infer_types is not None:
-        warnings.warn("infer_types will have no effect in 0.14", FutureWarning)
-    else:
-        infer_types = True  # TODO: remove effect of this in 0.14
-
     # Type check here. We don't want to parse only to fail because of an
     # invalid value of an integer skiprows.
     if isinstance(skiprows, numbers.Integral) and skiprows < 0:
         raise ValueError('cannot skip rows starting from the end of the '
                          'data (you passed a negative value)')
-    return _parse(flavor, io, match, header, index_col, skiprows, infer_types,
-                  parse_dates, tupleize_cols, thousands, attrs)
+    return _parse(flavor, io, match, header, index_col, skiprows, parse_dates,
+                  tupleize_cols, thousands, attrs)

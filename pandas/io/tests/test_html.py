@@ -142,11 +142,8 @@ class TestReadHtml(tm.TestCase):
         assert_framelist_equal(df1, df2)
 
     def test_spam_no_types(self):
-        with tm.assert_produces_warning(FutureWarning):
-            df1 = self.read_html(self.spam_data, '.*Water.*',
-                                 infer_types=False)
-        with tm.assert_produces_warning(FutureWarning):
-            df2 = self.read_html(self.spam_data, 'Unit', infer_types=False)
+        df1 = self.read_html(self.spam_data, '.*Water.*')
+        df2 = self.read_html(self.spam_data, 'Unit')
 
         assert_framelist_equal(df1, df2)
 
@@ -240,12 +237,9 @@ class TestReadHtml(tm.TestCase):
         assert_framelist_equal(df1, df2)
 
     def test_header_and_index_no_types(self):
-        with tm.assert_produces_warning(FutureWarning):
-            df1 = self.read_html(self.spam_data, '.*Water.*', header=1,
-                                     index_col=0, infer_types=False)
-        with tm.assert_produces_warning(FutureWarning):
-            df2 = self.read_html(self.spam_data, 'Unit', header=1,
-                                    index_col=0, infer_types=False)
+        df1 = self.read_html(self.spam_data, '.*Water.*', header=1,
+                             index_col=0)
+        df2 = self.read_html(self.spam_data, 'Unit', header=1, index_col=0)
         assert_framelist_equal(df1, df2)
 
     def test_header_and_index_with_types(self):
@@ -255,20 +249,9 @@ class TestReadHtml(tm.TestCase):
         assert_framelist_equal(df1, df2)
 
     def test_infer_types(self):
-        with tm.assert_produces_warning(FutureWarning):
-            df1 = self.read_html(self.spam_data, '.*Water.*', index_col=0,
-                                     infer_types=False)
-        with tm.assert_produces_warning(FutureWarning):
-            df2 = self.read_html(self.spam_data, 'Unit', index_col=0,
-                                    infer_types=False)
+        df1 = self.read_html(self.spam_data, '.*Water.*', index_col=0)
+        df2 = self.read_html(self.spam_data, 'Unit', index_col=0)
         assert_framelist_equal(df1, df2)
-
-        with tm.assert_produces_warning(FutureWarning):
-            df2 = self.read_html(self.spam_data, 'Unit', index_col=0,
-                                    infer_types=True)
-
-        with tm.assertRaises(AssertionError):
-            assert_framelist_equal(df1, df2)
 
     def test_string_io(self):
         with open(self.spam_data) as f:
@@ -573,7 +556,7 @@ class TestReadHtml(tm.TestCase):
     def test_parse_dates_list(self):
         df = DataFrame({'date': date_range('1/1/2001', periods=10)})
         expected = df.to_html()
-        res = self.read_html(expected, parse_dates=[0], index_col=0)
+        res = self.read_html(expected, parse_dates=['date'], index_col=0)
         tm.assert_frame_equal(df, res[0])
 
     def test_parse_dates_combine(self):
@@ -590,8 +573,7 @@ class TestReadHtml(tm.TestCase):
         with tm.assertRaisesRegexp(CParserError, r"Passed header=\[0,1\] are "
                                    "too many rows for this multi_index "
                                    "of columns"):
-            with tm.assert_produces_warning(FutureWarning):
-                self.read_html(data, infer_types=False, header=[0, 1])
+            self.read_html(data, header=[0, 1])
 
 
 class TestReadHtmlLxml(tm.TestCase):
@@ -646,8 +628,7 @@ class TestReadHtmlLxml(tm.TestCase):
     def test_computer_sales_page(self):
         import pandas as pd
         data = os.path.join(DATA_PATH, 'computer_sales_page.html')
-        with tm.assert_produces_warning(FutureWarning):
-            self.read_html(data, infer_types=False, header=[0, 1])
+        self.read_html(data, header=[0, 1])
 
 
 def test_invalid_flavor():
