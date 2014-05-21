@@ -13,6 +13,7 @@ from numpy.testing import assert_array_equal
 from pandas.core.api import DataFrame, Panel
 from pandas.computation import expressions as expr
 from pandas import compat
+from pandas.compat import lrange
 
 from pandas.util.testing import (assert_almost_equal, assert_series_equal,
                                  assert_frame_equal, assert_panel_equal,
@@ -368,6 +369,14 @@ class TestExpressions(tm.TestCase):
 
                 with tm.assertRaisesRegexp(TypeError, err_msg):
                     f(df, True)
+
+    def test_bool_subtraction(self):
+        df = DataFrame({'a': lrange(10), 'b': lrange(10, 20)})
+        df.loc[lrange(0, 10, 2), 'a'] = np.nan
+        nulls = df.isnull()
+        result = 1 - nulls
+        expected = (~nulls).astype('int64')
+        tm.assert_frame_equal(result, expected)
 
 
 if __name__ == '__main__':
