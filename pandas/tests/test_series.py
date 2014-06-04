@@ -4860,6 +4860,13 @@ class TestSeries(tm.TestCase, CheckNameIntegration):
         exp = s * 2
         assert_series_equal(result, exp)
 
+    def test_map_with_single_element_tuple(self):
+        s = Series([(1,), (2,), (3, 4), (5, 6)], name='a')
+        labels = {(1,): 'A', (2,): 'B', (3, 4): 'A', (5, 6): 'B'}
+        res = s.map(labels)
+        exp = Series(list('ABAB'), name='a')
+        tm.assert_series_equal(res, exp)
+
     def test_apply(self):
         assert_series_equal(self.ts.apply(np.sqrt), np.sqrt(self.ts))
 
