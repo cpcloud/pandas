@@ -1589,3 +1589,12 @@ def use_numexpr(use, min_elements=expr._MIN_ELEMENTS):
     yield
     expr._MIN_ELEMENTS = oldmin
     expr.set_use_numexpr(olduse)
+
+
+def run_tests(attr='fast', disabled=False):
+    attrs = ['%sdisabled' % ('' if disabled else 'not ')]
+    d = {'fast': ['not slow', 'not network', 'not db'], 'full': []}
+    attrs.extend(d.get(attr, []))
+    import nose
+    argv = ["-A %r" % ' and '.join(attrs)]
+    return nose.run(argv=argv)

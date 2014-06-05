@@ -53,3 +53,4 @@ from pandas.tools.tile import cut, qcut
 from pandas.core.reshape import melt
 from pandas.util.print_versions import show_versions
 import pandas.util.testing
+from pandas.util.testing import run_tests
