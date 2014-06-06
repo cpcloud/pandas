@@ -83,12 +83,24 @@ tiebreakers = {
 }
 
 
-# ctypedef fused pvalue_t:
-#     float64_t
-#     int64_t
-#     object
+ctypedef fused pandas_t:
+    float64_t
+    int64_t
+    Py_ssize_t
+    object
 
 # from cython cimport floating, integral
+cdef pandas_t[:, :] _take_2d(pandas_t[:, :] values, Py_ssize_t[:, :] indexer):
+    cdef:
+        Py_ssize_t i, j
+        Py_ssize_t N = values.shape[0], K = values.shape[1]
+        pandas_t[:, :] result = values.copy()
+
+    for i in range(N):
+        for j in range(K):
+            result[i, j] = values[i, indexer[i, j]]
+    return result
+
 
 cdef _take_2d_float64(ndarray[float64_t, ndim=2] values,
                       object idx):
@@ -298,27 +310,26 @@ def rank_1d_int64(object in_arr, ties_method='average', ascending=True,
         return ranks
 
 
-def rank_2d_float64(object in_arr, axis=0, ties_method='average',
-                    ascending=True, na_option='keep', pct=False):
+def rank_2d_float64(float64_t[:, :] in_arr, int axis=0,
+                    object ties_method='average', bint ascending=True,
+                    object na_option='keep', bint pct=False):
     """
     Fast NaN-friendly version of scipy.stats.rankdata
     """
 
     cdef:
         Py_ssize_t i, j, z, k, n, dups = 0, total_tie_count = 0
-        ndarray[float64_t, ndim=2] ranks, values
-        ndarray[int64_t, ndim=2] argsorted
+        float64_t[:, :] values, ranks
+        Py_ssize_t[:, :] argsorted, _as
         float64_t val, nan_value
         float64_t sum_ranks = 0
         int tiebreak = 0
-        bint keep_na = 0
+        bint keep_na = False
         float count = 0.0
 
     tiebreak = tiebreakers[ties_method]
 
     keep_na = na_option == 'keep'
-
-    in_arr = np.asarray(in_arr)
 
     if axis == 0:
         values = in_arr.T.copy()
@@ -346,7 +357,7 @@ def rank_2d_float64(object in_arr, axis=0, ties_method='average',
     if not ascending:
         _as = _as[:, ::-1]
 
-    values = _take_2d_float64(values, _as)
+    values = _take_2d(values, _as)
     argsorted = _as.astype('i8')
 
     for i in range(n):
@@ -383,34 +394,34 @@ def rank_2d_float64(object in_arr, axis=0, ties_method='average',
                         ranks[i, argsorted[i, z]] = total_tie_count
                 sum_ranks = dups = 0
         if pct:
-            ranks[i, :] /= count
+            for j in range(k):
+                ranks[i, j] /= count
     if axis == 0:
         return ranks.T
     else:
         return ranks
 
 
-def rank_2d_int64(object in_arr, axis=0, ties_method='average',
-                    ascending=True, na_option='keep', pct=False):
+def rank_2d_int64(Py_ssize_t[:, :] in_arr, int axis=0,
+                  object ties_method='average', bint ascending=True,
+                  object na_option='keep', bint pct=False):
     """
     Fast NaN-friendly version of scipy.stats.rankdata
     """
 
     cdef:
         Py_ssize_t i, j, z, k, n, dups = 0, total_tie_count = 0
-        ndarray[float64_t, ndim=2] ranks
-        ndarray[int64_t, ndim=2] argsorted
-        ndarray[int64_t, ndim=2, cast=True] values
+        float64_t[:, :] ranks
+        Py_ssize_t[:, :] _as, argsorted, values
         int64_t val
         float64_t sum_ranks = 0
         int tiebreak = 0
         float count = 0.0
+
     tiebreak = tiebreakers[ties_method]
 
     if axis == 0:
-        values = np.asarray(in_arr).T
-    else:
-        values = np.asarray(in_arr)
+        values = in_arr.T
 
     n, k = (<object> values).shape
     ranks = np.empty((n, k), dtype='f8')
@@ -426,7 +437,7 @@ def rank_2d_int64(object in_arr, axis=0, ties_method='average',
     if not ascending:
         _as = _as[:, ::-1]
 
-    values = _take_2d_int64(values, _as)
+    values = _take_2d(values, _as)
     argsorted = _as.astype('i8')
 
     for i in range(n):
@@ -460,15 +471,18 @@ def rank_2d_int64(object in_arr, axis=0, ties_method='average',
                         ranks[i, argsorted[i, z]] = total_tie_count
                 sum_ranks = dups = 0
         if pct:
-            ranks[i, :] /= count
+            for j in range(k):
+                ranks[i, j] /= count
     if axis == 0:
         return ranks.T
     else:
         return ranks
 
 
-def rank_1d_generic(object in_arr, bint retry=1, ties_method='average',
-                    ascending=True, na_option='keep', pct=False):
+def rank_1d_generic(object in_arr, bint retry=True,
+                    object ties_method='average',
+                    bint ascending=True, object na_option='keep',
+                    bint pct=False):
     """
     Fast NaN-friendly version of scipy.stats.rankdata
     """
@@ -513,7 +527,7 @@ def rank_1d_generic(object in_arr, bint retry=1, ties_method='average',
         if not retry:
             raise
 
-        valid_locs = (~mask).nonzero()[0]
+        valid_locs, = (~mask).nonzero()
         ranks.put(valid_locs, rank_1d_generic(values.take(valid_locs), 0,
                                               ties_method=ties_method,
                                               ascending=ascending))
@@ -585,7 +599,7 @@ class NegInfinity(object):
     __ge__ = _return_false
     __cmp__ = _return_true
 
-def rank_2d_generic(object in_arr, axis=0, ties_method='average',
+def rank_2d_generic(object[:, :] in_arr, axis=0, ties_method='average',
                     ascending=True, na_option='keep', pct=False):
     """
     Fast NaN-friendly version of scipy.stats.rankdata
@@ -594,9 +608,9 @@ def rank_2d_generic(object in_arr, axis=0, ties_method='average',
     cdef:
         Py_ssize_t i, j, z, k, n, infs, dups = 0
         Py_ssize_t total_tie_count = 0
-        ndarray[float64_t, ndim=2] ranks
-        ndarray[object, ndim=2] values
-        ndarray[int64_t, ndim=2] argsorted
+        float64_t[:, :] ranks
+        object[:, :] values
+        Py_ssize_t[:, :] argsorted, _as
         object val, nan_value
         float64_t sum_ranks = 0
         int tiebreak = 0
@@ -607,15 +621,7 @@ def rank_2d_generic(object in_arr, axis=0, ties_method='average',
 
     keep_na = na_option == 'keep'
 
-    in_arr = np.asarray(in_arr)
-
-    if axis == 0:
-        values = in_arr.T.copy()
-    else:
-        values = in_arr.copy()
-
-    if values.dtype != np.object_:
-        values = values.astype('O')
+    values = (in_arr.T.copy() if axis == 0 else in_arr.copy()).astype('O')
 
     if ascending ^ (na_option == 'top'):
         # always greater than everything
@@ -646,8 +652,7 @@ def rank_2d_generic(object in_arr, axis=0, ties_method='average',
     if not ascending:
         _as = _as[:, ::-1]
 
-    values = _take_2d_object(values, _as)
-    argsorted = _as.astype('i8')
+    values = _take_2d(values, _as)
 
     for i in range(n):
         dups = sum_ranks = infs = 0
@@ -681,7 +686,8 @@ def rank_2d_generic(object in_arr, axis=0, ties_method='average',
                         ranks[i, argsorted[i, z]] = total_tie_count
                 sum_ranks = dups = 0
         if pct:
-            ranks[i, :] /= count
+            for j in range(k):
+                ranks[i, j] /= count
     if axis == 0:
         return ranks.T
     else:
