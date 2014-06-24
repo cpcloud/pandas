@@ -1951,6 +1951,16 @@ class TestSeries(tm.TestCase, CheckNameIntegration):
     def test_min(self):
         self._check_stat_op('min', np.min, check_objects=True)
 
+    def test_min_string_with_nans(self):
+        s = Series(['a', 'b', np.nan])
+        result = s.min()
+        expected = 'a'
+        self.assertEqual(result, expected)
+
+        s = Series(['a', 'b', np.nan])
+        result = s.min(skipna=False)
+        self.assertTrue(np.isnan(result))
+
     def test_max(self):
         self._check_stat_op('max', np.max, check_objects=True)
 

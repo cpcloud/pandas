@@ -13,7 +13,7 @@ except ImportError:  # pragma: no cover
 import pandas.core.common as com
 import pandas.hashtable as _hash
 from pandas import compat, lib, algos, tslib
-from pandas.compat import builtins
+from pandas.compat import builtins, zip
 from pandas.core.common import isnull, notnull, _values_from_object, is_float
 
 
@@ -367,7 +367,7 @@ def nanmin(values, axis=None, skipna=True):
                                                  fill_value_typ='+inf')
 
     # numpy 1.6.1 workaround in Python 3.x
-    if (values.dtype == np.object_ and compat.PY3):
+    if values.dtype == np.object_ and compat.PY3:
         if values.ndim > 1:
             apply_ax = axis if axis is not None else 0
             result = np.apply_along_axis(builtins.min, apply_ax, values)
@@ -385,7 +385,24 @@ def nanmin(values, axis=None, skipna=True):
             except:
                 result = np.nan
         else:
-            result = values.min(axis)
+            # 'a' > inf and 'a' > -inf
+            # and also np.apply_along_axis promotes to string :(
+            # so we have to manually iterate over the axis
+            if values.dtype == np.object_ and skipna:
+                if values.ndim == 1:
+                    result = values[~mask].min(axis)
+                else:
+                    rollit = functools.partial(np.rollaxis, axis=1 - axis)
+
+                    def _get_min(x, m):
+                        r = x[m]
+                        return r.min() if len(r) else np.nan
+
+                    it = zip(rollit(values), rollit(~mask))
+                    lst = list(itertools.starmap(_get_min, it))
+                    result = np.array(lst, dtype='object')
+            else:
+                result = values.min(axis)
 
     result = _wrap_results(result, dtype)
     return _maybe_null_out(result, axis, mask)
