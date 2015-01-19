@@ -109,6 +109,12 @@ class TestReadHtml(tm.TestCase, ReadHtmlMixin):
         res = self.read_html(out, attrs={'class': 'dataframe'}, index_col=0)[0]
         tm.assert_frame_equal(res, df)
 
+    def test_to_html_compat_with_index_name(self):
+        df = DataFrame(np.arange(6).reshape(3, 2), columns=list("AB"),
+                       index=Index(list('abc'), name='index'))
+        df2 = self.read_html(df.to_html(), index_col=0)
+        tm.assert_frame_equal(df2[0], df)
+
     @network
     def test_banklist_url(self):
         url = 'http://www.fdic.gov/bank/individual/failed/banklist.html'
@@ -426,10 +432,10 @@ class TestReadHtml(tm.TestCase, ReadHtmlMixin):
         res1 = self.read_html(StringIO(data1))
         res2 = self.read_html(StringIO(data2))
         assert_framelist_equal(res1, res2)
-    
+
     def test_tfoot_read(self):
         """
-        Make sure that read_html reads tfoot, containing td or th. 
+        Make sure that read_html reads tfoot, containing td or th.
         Ignores empty tfoot
         """
         data_template = '''<table>
@@ -452,10 +458,10 @@ class TestReadHtml(tm.TestCase, ReadHtmlMixin):
 
         data1 = data_template.format(footer = "")
         data2 = data_template.format(footer ="<tr><td>footA</td><th>footB</th></tr>")
-    
+
         d1 = {'A': ['bodyA'], 'B': ['bodyB']}
         d2 = {'A': ['bodyA', 'footA'], 'B': ['bodyB', 'footB']}
-    
+
         tm.assert_frame_equal(self.read_html(data1)[0], DataFrame(d1))
         tm.assert_frame_equal(self.read_html(data2)[0], DataFrame(d2))
 
