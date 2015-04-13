@@ -4082,6 +4082,13 @@ def test_get_combined_index():
     assert(result.equals(Index([])))
 
 
+def test_index_equals_different_lengths():
+    a = Index(list('abc'))
+    b = Index(list('ab'))
+    with tm.assertRaisesRegexp(ValueError, r"foo"):
+        a == b
+    # tm.assertFalse(a == b)
+
 
 if __name__ == '__main__':
     nose.runmodule(argv=[__file__, '-vvs', '-x', '--pdb', '--pdb-failure'],

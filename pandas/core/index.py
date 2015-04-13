@@ -51,6 +51,8 @@ def _indexOp(opname):
     """
 
     def wrapper(self, other):
+        if len(self) != len(other):
+            raise ValueError("arrays must be the same length")
         func = getattr(self._data.view(np.ndarray), opname)
         result = func(np.asarray(other))
 
