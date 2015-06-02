@@ -36,7 +36,7 @@ import pandas.tests.test_frame as test_frame
 import pandas.tests.test_panel as test_panel
 import pandas.tests.test_series as test_series
 
-from .test_array import assert_sp_array_equal
+from pandas.sparse.tests.test_array import assert_sp_array_equal
 
 import warnings
 warnings.filterwarnings(action='ignore', category=FutureWarning)
@@ -281,7 +281,7 @@ class TestSparseSeries(tm.TestCase,
         arr = [0, 0, 0, nan, nan]
         sp_series = SparseSeries(arr, fill_value=0)
         assert_equal(sp_series.values.values, arr)
-        
+
     # GH 9272
     def test_constructor_empty(self):
         sp = SparseSeries()
@@ -508,6 +508,21 @@ class TestSparseSeries(tm.TestCase,
         for op in inplace_ops:
             _check_inplace_op(
                 getattr(operator, "i%s" % op), getattr(operator, op))
+
+    def test_abs(self):
+        s = SparseSeries([1, 2, -3], name='x')
+        expected = SparseSeries([1, 2, 3], name='x')
+        result = s.abs()
+        assert_sp_series_equal(result, expected)
+        self.assertEqual(result.name, 'x')
+
+        result = abs(s)
+        assert_sp_series_equal(result, expected)
+        self.assertEqual(result.name, 'x')
+
+        result = np.abs(s)
+        assert_sp_series_equal(result, expected)
+        self.assertEqual(result.name, 'x')
 
     def test_reindex(self):
         def _compare_with_series(sps, new_index):
@@ -997,7 +1012,7 @@ class TestSparseDataFrame(tm.TestCase, test_frame.SafeForSparse):
             ValueError, "^Column length", SparseDataFrame, self.frame.values,
             columns=self.frame.columns[:-1])
 
-    # GH 9272 
+    # GH 9272
     def test_constructor_empty(self):
         sp = SparseDataFrame()
         self.assertEqual(len(sp.index), 0)
@@ -1283,7 +1298,9 @@ class TestSparseDataFrame(tm.TestCase, test_frame.SafeForSparse):
             frame['E'] = to_insert
             expected = to_insert.to_dense().reindex(
                 frame.index).fillna(to_insert.fill_value)
-            assert_series_equal(frame['E'].to_dense(), expected)
+            result = frame['E'].to_dense()
+            assert_series_equal(result, expected, check_names=False)
+            self.assertEqual(result.name, 'E')
 
             # insert Series
             frame['F'] = frame['A'].to_dense()
@@ -1747,8 +1764,8 @@ class TestSparsePanel(tm.TestCase,
         with tm.assertRaisesRegexp(TypeError,
                                    "input must be a dict, a 'list' was passed"):
             SparsePanel(['a', 'b', 'c'])
-        
-    # GH 9272    
+
+    # GH 9272
     def test_constructor_empty(self):
         sp = SparsePanel()
         self.assertEqual(len(sp.items), 0)

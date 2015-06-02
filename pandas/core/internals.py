@@ -296,7 +296,7 @@ class Block(PandasObject):
             if self.ndim > 2:
                 raise NotImplementedError("number of dimensions for 'fillna' "
                                           "is currently limited to 2")
-            mask[mask.cumsum(self.ndim-1)>limit]=False
+            mask[mask.cumsum(self.ndim-1) > limit] = False
 
         value = self._try_fill(value)
         blocks = self.putmask(mask, value, inplace=inplace)
@@ -874,9 +874,9 @@ class Block(PandasObject):
     def get_values(self, dtype=None):
         return self.values
 
-    def diff(self, n):
+    def diff(self, n, axis=1):
         """ return block for the diff of the values """
-        new_values = com.diff(self.values, n, axis=1)
+        new_values = com.diff(self.values, n, axis=axis)
         return [make_block(values=new_values,
                            ndim=self.ndim, fastpath=True,
                            placement=self.mgr_locs)]
@@ -1691,7 +1691,7 @@ class CategoricalBlock(NonConsolidatableMixIn, ObjectBlock):
                                       "not been implemented yet")
 
         values = self.values if inplace else self.values.copy()
-        return [self.make_block_same_class(values=values.fillna(fill_value=value,
+        return [self.make_block_same_class(values=values.fillna(value=value,
                                                                 limit=limit),
                                            placement=self.mgr_locs)]
 
@@ -3132,7 +3132,6 @@ class BlockManager(PandasObject):
 
         pandas-indexer with -1's only.
         """
-
         if indexer is None:
             if new_axis is self.axes[axis] and not copy:
                 return self
@@ -3144,10 +3143,9 @@ class BlockManager(PandasObject):
 
         self._consolidate_inplace()
 
-        # trying to reindex on an axis with duplicates
-        if (not allow_dups and not self.axes[axis].is_unique
-            and len(indexer)):
-            raise ValueError("cannot reindex from a duplicate axis")
+        # some axes don't allow reindexing with dups
+        if not allow_dups:
+            self.axes[axis]._can_reindex(indexer)
 
         if axis >= self.ndim:
             raise IndexError("Requested axis not found in manager")
@@ -4017,7 +4015,8 @@ def _putmask_smart(v, m, n):
     try:
         nn = n[m]
         nn_at = nn.astype(v.dtype)
-        if (nn == nn_at).all():
+        comp = (nn == nn_at)
+        if is_list_like(comp) and comp.all():
             nv = v.copy()
             nv[m] = nn_at
             return nv
