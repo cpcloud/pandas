@@ -38,7 +38,7 @@ class TimeGrouper(Grouper):
     def __init__(self, freq='Min', closed=None, label=None, how='mean',
                  nperiods=None, axis=0,
                  fill_method=None, limit=None, loffset=None, kind=None,
-                 convention=None, base=0, **kwargs):
+                 convention=None, base=0, anchor=True, **kwargs):
         freq = to_offset(freq)
 
         end_types = set(['M', 'A', 'Q', 'BM', 'BA', 'BQ', 'W'])
@@ -68,6 +68,7 @@ class TimeGrouper(Grouper):
         self.fill_method = fill_method
         self.limit = limit
         self.base = base
+        self.anchor = anchor
 
         # always sort time groupers
         kwargs['sort'] = True
@@ -158,7 +159,8 @@ class TimeGrouper(Grouper):
 
         first, last = ax.min(), ax.max()
         first, last = _get_range_edges(first, last, self.freq, closed=self.closed,
-                                       base=self.base)
+                                       base=self.base,
+                                       anchor=self.anchor)
         tz = ax.tz
         binner = labels = DatetimeIndex(freq=self.freq,
                                         start=first.replace(tzinfo=None),
@@ -377,7 +379,7 @@ def _take_new_index(obj, indexer, new_index, axis=0):
         raise ValueError("'obj' should be either a Series or a DataFrame")
 
 
-def _get_range_edges(first, last, offset, closed='left', base=0):
+def _get_range_edges(first, last, offset, closed='left', base=0, anchor=True):
     if isinstance(offset, compat.string_types):
         offset = to_offset(offset)
 
@@ -386,7 +388,7 @@ def _get_range_edges(first, last, offset, closed='left', base=0):
         day_nanos = _delta_to_nanoseconds(timedelta(1))
 
         # #1165
-        if (is_day and day_nanos % offset.nanos == 0) or not is_day:
+        if is_day and not day_nanos % offset.nanos or anchor and not is_day:
             return _adjust_dates_anchored(first, last, offset,
                                           closed=closed, base=base)
 
