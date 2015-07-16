@@ -1767,4 +1767,4 @@ def _concat_compat(to_concat, axis=0):
     else:
         concatted = np.concatenate(list(map(convert_categorical, to_concat)),
                                    axis=0)
-        return Categorical(concatted, rawcats)
+        return Categorical(concatted)
