@@ -2984,6 +2984,27 @@ class TestCategoricalAsBlock(tm.TestCase):
 
         tm.assert_frame_equal(df_expected, df_concat)
 
+    def test_concat_categorical_mixed_dtype_with_extra_categories(self):
+        # GH10597
+        expected = pd.Series(list('aabbaabbcd'), dtype='category',
+                             index=[0, 1, 2, 3, 0, 1, 2, 3, 4, 5])
+
+        s = pd.Series(list('aabb'), dtype='category')
+        s2 = pd.Series(list('aabbcd'), dtype='category')
+
+        with tm.assertRaisesRegexp(ValueError, "incompatible categories in .+"):
+            # This should eventually work
+            pd.concat([s, s2])
+
+        s = pd.Series(list('aabb'), dtype='category')
+        s2 = pd.Series(list('aabbcd'))
+        r = pd.concat([s, s2])
+        tm.assert_series_equal(r, expected)
+
+        s = pd.Series(list('aabb'))
+        s2 = pd.Series(list('aabbcd'), dtype='category')
+        r = pd.concat([s, s2])
+        tm.assert_series_equal(r, expected)
 
 
 if __name__ == '__main__':
