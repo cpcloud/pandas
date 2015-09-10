@@ -6,7 +6,7 @@ from itertools import product
 from distutils.version import LooseVersion
 
 import nose
-from nose.tools import assert_raises
+from nose.tools import assert_raises, assert_equal
 
 from numpy.random import randn, rand, randint
 import numpy as np
@@ -1798,9 +1798,23 @@ def check_negate_lt_eq_le(engine, parser):
         result = df.query('not (cat > 0)', engine=engine, parser=parser)
         tm.assert_frame_equal(result, expected)
 
+
 def test_negate_lt_eq_le():
     for engine, parser in product(_engines, expr._parsers):
         yield check_negate_lt_eq_le, engine, parser
+
+
+def check_string_cmp(engine, parser, expr, expected):
+    tm.skip_if_no_ne(engine)
+    assert_equal(pd.eval(expr, engine=engine, parser=parser), expected)
+
+
+def test_str_eq():
+    expr = '"a" == "a"'
+    assert pd.eval(expr, engine='numexpr', parser='python')
+    # exprs = [('"a" == "a"', True), ('"a" != "a"', False)]
+    # for engine, parser, (e, ex) in product(_engines, expr._parsers, exprs):
+    #     yield check_string_cmp, engine, parser, e, ex
 
 
 if __name__ == '__main__':
