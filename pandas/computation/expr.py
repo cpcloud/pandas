@@ -2,11 +2,8 @@
 """
 
 import ast
-import operator
-import sys
-import inspect
 import tokenize
-import datetime
+import numpy as np
 
 from functools import partial
 
@@ -21,7 +18,7 @@ from pandas.computation.ops import (_cmp_ops_syms, _bool_ops_syms,
 from pandas.computation.ops import _reductions, _mathops, _LOCAL_TAG
 from pandas.computation.ops import Op, BinOp, UnaryOp, Term, Constant, Div
 from pandas.computation.ops import UndefinedVariableError, FuncNode
-from pandas.computation.scope import Scope, _ensure_scope
+from pandas.computation.scope import Scope
 
 
 def tokenize_string(source):
@@ -333,19 +330,23 @@ class BaseExprVisitor(ast.NodeVisitor):
             left_list, right_list = map(_is_list, (left, right))
             left_str, right_str = map(_is_str, (left, right))
 
+            both_strings = left_str and right_str
+
             # if there are any strings or lists in the expression
-            if left_list or right_list or left_str or right_str:
-                op_instance = self.rewrite_map[op_type]()
+            if not both_strings:
+                if left_list or right_list or left_str or right_str:
+                    op_instance = self.rewrite_map[op_type]()
 
-            # pop the string variable out of locals and replace it with a list
-            # of one string, kind of a hack
-            if right_str:
-                name = self.env.add_tmp([right.value])
-                right = self.term_type(name, self.env)
+                # pop the string variable out of locals and replace it with a
+                # list of one string, kind of a hack
 
-            if left_str:
-                name = self.env.add_tmp([left.value])
-                left = self.term_type(name, self.env)
+                if right_str:
+                    name = self.env.add_tmp([right.value])
+                    right = self.term_type(name, self.env)
+
+                if left_str:
+                    name = self.env.add_tmp([left.value])
+                    left = self.term_type(name, self.env)
 
         op = self.visit(op_instance)
         return op, op_instance, left, right
