@@ -571,6 +571,7 @@ cdef class TextReader:
         pass
 
     def __dealloc__(self):
+        print('calling dealloc!')
         parser_free(self.parser)
         kh_destroy_str(self.true_set)
         kh_destroy_str(self.false_set)

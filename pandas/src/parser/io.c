@@ -57,6 +57,7 @@ void *new_rd_source(PyObject *obj) {
  */
 
 int del_file_source(void *fs) {
+    printf("calling del_file_source %p\n", fs);
     if (fs == NULL) return 0;
 
     /* allocated on the heap */
