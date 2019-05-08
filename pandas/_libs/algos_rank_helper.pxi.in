@@ -179,6 +179,10 @@ def rank_1d_{{dtype}}(object in_arr, ties_method='average',
                     total_tie_count += 1
                     for j in range(i - dups + 1, i + 1):
                         ranks[argsorted[j]] = total_tie_count
+                elif tiebreak == TIEBREAK_STRICT:
+                    total_tie_count += 1
+                    for j in range(i - dups + 1, i + 1):
+                        ranks[argsorted[j]] = total_tie_count - 1
                 sum_ranks = dups = 0
     if pct:
         if tiebreak == TIEBREAK_DENSE:

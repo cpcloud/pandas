@@ -38,6 +38,7 @@ tiebreakers = {
     'max': TIEBREAK_MAX,
     'first': TIEBREAK_FIRST,
     'dense': TIEBREAK_DENSE,
+    'strict': TIEBREAK_STRICT,
 }
 
 
